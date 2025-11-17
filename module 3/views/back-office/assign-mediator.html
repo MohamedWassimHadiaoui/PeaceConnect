@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assigner un Médiateur - PeaceConnect Admin Module 3</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../assets/css/main.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+    <link rel="stylesheet" href="../../assets/css/responsive.css">
+    <link rel="stylesheet" href="../../assets/css/module3.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                🕊️ PeaceConnect Admin
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Tableau de bord</a></li>
+                <li><a href="manage-reports.html">📋 Signalements</a></li>
+                <li><a href="assign-mediator.html" class="active">👤 Médiateurs</a></li>
+                <li><a href="#">📈 Statistiques</a></li>
+                <li><a href="#">⚙️ Paramètres</a></li>
+                <li><a href="../../index.html" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 1rem; padding-top: 1rem;">← Retour au site</a></li>
+            </ul>
+        </aside>
+
+        <!-- Contenu principal -->
+        <main class="admin-main">
+            <div style="margin-bottom: 2rem;">
+                <a href="manage-reports.html" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-primary);">
+                    ← Retour à la liste des signalements
+                </a>
+            </div>
+
+            <div class="admin-header">
+                <div>
+                    <h1>Assigner un Médiateur</h1>
+                    <p style="color: var(--color-text-light);">Assignez le médiateur le plus approprié pour ce signalement</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                <!-- Formulaire d'assignation -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Détails du signalement #<span id="reportId">REP-2025-001</span></h2>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <strong>Type :</strong>
+                            <span><span class="tag tag-primary">Conflit</span></span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Titre :</strong>
+                            <span>Conflit au travail avec collègue</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Urgence :</strong>
+                            <span><span class="badge badge-info">Moyenne</span></span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Date de création :</strong>
+                            <span>15 novembre 2025</span>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 1.5rem;">
+                        <div class="card-header">
+                            <h2 class="card-title">Formulaire d'assignation</h2>
+                        </div>
+                        
+                        <form id="assignForm" class="form" data-validate>
+                            <div class="form-group">
+                                <label for="mediator" class="form-label">Sélectionner un médiateur *</label>
+                                <select id="mediator" name="mediator_id" class="form-control">
+                                    <option value="">Choisir un médiateur...</option>
+                                    <option value="1">Ahmed Ben Ali - Conflits professionnels (⭐ 4.8/5)</option>
+                                    <option value="2">Sara Boulifi - Médiation générale (⭐ 4.6/5)</option>
+                                    <option value="3">Karim Trabelsi - Violence et agressions (⭐ 4.9/5)</option>
+                                    <option value="4">Leila Mansouri - Discrimination (⭐ 4.7/5)</option>
+                                    <option value="5">Mohamed Salah - Harcèlement (⭐ 4.5/5)</option>
+                                </select>
+                                <span class="form-error"></span>
+                                <span class="form-help">Le système AI recommande: Ahmed Ben Ali pour ce type de conflit</span>
+                            </div>
+
+                            <div class="info-box">
+                                <span class="icon">🤖</span>
+                                <div>
+                                    <p style="margin: 0; font-weight: 600;">Recommandation IA</p>
+                                    <p style="margin: 0;">Ahmed Ben Ali est spécialisé dans les conflits professionnels et a un taux de résolution de 89% pour ce type de situation.</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="mediationDate" class="form-label">Date et heure de la séance *</label>
+                                <input type="datetime-local" id="mediationDate" name="mediation_date" class="form-control">
+                                <span class="form-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="location" class="form-label">Lieu de la médiation *</label>
+                                <input type="text" id="location" name="location" class="form-control"
+                                       placeholder="Ex: Bureau de médiation, Tunis">
+                                <span class="form-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Type de médiation</label>
+                                <div class="form-check">
+                                    <input type="radio" id="typeInPerson" name="mediationType" value="in-person" checked>
+                                    <label for="typeInPerson" class="form-check-label">En présentiel</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" id="typeOnline" name="mediationType" value="online">
+                                    <label for="typeOnline" class="form-check-label">En ligne (visioconférence)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" id="typeHybrid" name="mediationType" value="hybrid">
+                                    <label for="typeHybrid" class="form-check-label">Hybride</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="notes" class="form-label">Notes pour le médiateur (optionnel)</label>
+                                <textarea id="notes" name="notes" class="form-control" rows="4" 
+                                          placeholder="Instructions spéciales, contexte supplémentaire, précautions à prendre..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" id="notifyUser" name="notifyUser" checked>
+                                    <label for="notifyUser" class="form-check-label">Notifier l'utilisateur par email</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" id="notifyMediator" name="notifyMediator" checked>
+                                    <label for="notifyMediator" class="form-check-label">Notifier le médiateur par email</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 2rem;">
+                                <div style="display: flex; gap: 1rem;">
+                                    <button type="submit" class="btn btn-primary">✓ Assigner le médiateur</button>
+                                    <button type="button" class="btn btn-outline" onclick="history.back()">Annuler</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panneau latéral -->
+                <div>
+                    <!-- Profil du médiateur recommandé -->
+                    <div class="card" id="mediatorProfile">
+                        <div class="card-header">
+                            <h3 class="card-title">Médiateur recommandé</h3>
+                        </div>
+                        
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                            <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #1e3a8a, #16a34a); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem; font-weight: bold; margin: 0 auto;">
+                                AB
+                            </div>
+                        </div>
+                        
+                        <h3 style="text-align: center; margin-bottom: 0.5rem;">Ahmed Ben Ali</h3>
+                        <p style="text-align: center; color: var(--color-text-light); margin-bottom: 1.5rem;">
+                            Spécialiste conflits professionnels
+                        </p>
+                        
+                        <div style="background: var(--color-background); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span>Note moyenne</span>
+                                <span style="font-weight: 600;">⭐ 4.8/5</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span>Cas traités</span>
+                                <span style="font-weight: 600;">156</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span>Taux de résolution</span>
+                                <span style="font-weight: 600; color: var(--color-success);">89%</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Disponibilité</span>
+                                <span class="badge badge-success">Disponible</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 style="margin-bottom: 0.5rem;">Spécialités</h4>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+                                <span class="tag tag-primary">Conflits professionnels</span>
+                                <span class="tag tag-secondary">Médiation</span>
+                                <span class="tag tag-primary">Relations de travail</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 style="margin-bottom: 0.5rem;">Langues</h4>
+                            <p style="margin: 0; font-size: 0.875rem;">Français, Arabe, Anglais</p>
+                        </div>
+                    </div>
+
+                    <!-- Liste des médiateurs disponibles -->
+                    <div class="card" style="margin-top: 1.5rem;">
+                        <div class="card-header">
+                            <h3 class="card-title">Médiateurs disponibles</h3>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="padding: 0.75rem; background: var(--color-background); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #16a34a, #1e3a8a); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">SB</div>
+                                    <div style="flex: 1;">
+                                        <p style="margin: 0; font-weight: 600; font-size: 0.875rem;">Sara Boulifi</p>
+                                        <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-light);">⭐ 4.6/5</p>
+                                    </div>
+                                    <span class="badge badge-success" style="font-size: 0.7rem;">Dispo</span>
+                                </div>
+                            </div>
+                            
+                            <div style="padding: 0.75rem; background: var(--color-background); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1e3a8a, #16a34a); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">KT</div>
+                                    <div style="flex: 1;">
+                                        <p style="margin: 0; font-weight: 600; font-size: 0.875rem;">Karim Trabelsi</p>
+                                        <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-light);">⭐ 4.9/5</p>
+                                    </div>
+                                    <span class="badge badge-warning" style="font-size: 0.7rem;">Occupé</span>
+                                </div>
+                            </div>
+                            
+                            <div style="padding: 0.75rem; background: var(--color-background); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #16a34a, #1e3a8a); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">LM</div>
+                                    <div style="flex: 1;">
+                                        <p style="margin: 0; font-weight: 600; font-size: 0.875rem;">Leila Mansouri</p>
+                                        <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-light);">⭐ 4.7/5</p>
+                                    </div>
+                                    <span class="badge badge-success" style="font-size: 0.7rem;">Dispo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/main.js"></script>
+    <script src="../../assets/js/assign-mediator.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des signalements - PeaceConnect Admin Module 3</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../assets/css/main.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+    <link rel="stylesheet" href="../../assets/css/responsive.css">
+    <link rel="stylesheet" href="../../assets/css/module3.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                🕊️ PeaceConnect Admin
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Tableau de bord</a></li>
+                <li><a href="manage-reports.html" class="active">📋 Signalements</a></li>
+                <li><a href="assign-mediator.html">👤 Médiateurs</a></li>
+                <li><a href="#">📈 Statistiques</a></li>
+                <li><a href="#">⚙️ Paramètres</a></li>
+                <li><a href="../../index.html" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 1rem; padding-top: 1rem;">← Retour au site</a></li>
+            </ul>
+        </aside>
+
+        <!-- Contenu principal -->
+        <main class="admin-main">
+            <div class="admin-header">
+                <div>
+                    <h1>Gestion des signalements</h1>
+                    <p style="color: var(--color-text-light);">Gérez tous les signalements de la plateforme</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-outline">📊 Statistiques</button>
+                    <button class="btn btn-primary">📤 Exporter</button>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label class="form-label">Rechercher</label>
+                    <input type="text" class="form-control filter-input" data-filter="tbody tr" 
+                           placeholder="ID, type, titre, auteur...">
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">Statut</label>
+                    <select class="form-control" id="statusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="new">Nouveau</option>
+                        <option value="pending">En attente</option>
+                        <option value="assigned">Assigné</option>
+                        <option value="in_mediation">En médiation</option>
+                        <option value="resolved">Résolu</option>
+                        <option value="closed">Fermé</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">Type</label>
+                    <select class="form-control" id="typeFilter">
+                        <option value="">Tous les types</option>
+                        <option value="violence">Violence</option>
+                        <option value="discrimination">Discrimination</option>
+                        <option value="harassment">Harcèlement</option>
+                        <option value="conflict">Conflit</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">Urgence</label>
+                    <select class="form-control" id="priorityFilter">
+                        <option value="">Toutes les priorités</option>
+                        <option value="critical">Critique</option>
+                        <option value="high">Haute</option>
+                        <option value="medium">Moyenne</option>
+                        <option value="low">Faible</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-control" id="dateFilter">
+                </div>
+            </div>
+
+            <!-- Tableau des signalements -->
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="sortable">ID</th>
+                            <th class="sortable">Type</th>
+                            <th class="sortable">Titre</th>
+                            <th class="sortable">Auteur</th>
+                            <th class="sortable">Statut</th>
+                            <th class="sortable">Urgence IA</th>
+                            <th class="sortable">Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#REP-2025-001</td>
+                            <td><span class="tag tag-primary">Conflit</span></td>
+                            <td>Conflit au travail avec collègue</td>
+                            <td>Jean Dupont</td>
+                            <td><span class="badge badge-warning">En médiation</span></td>
+                            <td><span class="badge badge-info">Moyenne</span></td>
+                            <td>16/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal1">Voir</button>
+                                <a href="assign-mediator.html?id=001" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#REP-2025-002</td>
+                            <td><span class="tag tag-primary">Harcèlement</span></td>
+                            <td>Harcèlement moral au lycée</td>
+                            <td>Sophie Martin</td>
+                            <td><span class="badge badge-info">Assigné</span></td>
+                            <td><span class="badge badge-danger">Haute</span></td>
+                            <td>15/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal2">Voir</button>
+                                <a href="assign-mediator.html?id=002" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#REP-2025-003</td>
+                            <td><span class="tag tag-primary">Discrimination</span></td>
+                            <td>Discrimination à l'embauche</td>
+                            <td>Pierre Laurent</td>
+                            <td><span class="badge badge-success">Résolu</span></td>
+                            <td><span class="badge badge-info">Moyenne</span></td>
+                            <td>14/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal3">Voir</button>
+                                <a href="assign-mediator.html?id=003" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#REP-2025-004</td>
+                            <td><span class="tag tag-primary">Violence</span></td>
+                            <td>Violence verbale en public</td>
+                            <td>Amélie Moreau</td>
+                            <td><span class="badge badge-warning">En cours</span></td>
+                            <td><span class="badge badge-danger">Critique</span></td>
+                            <td>13/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal4">Voir</button>
+                                <a href="assign-mediator.html?id=004" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#REP-2025-005</td>
+                            <td><span class="tag tag-primary">Conflit</span></td>
+                            <td>Conflit familial</td>
+                            <td>Marc Dubois</td>
+                            <td><span class="badge badge-success">Résolu</span></td>
+                            <td><span class="badge badge-info">Faible</span></td>
+                            <td>12/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal5">Voir</button>
+                                <a href="assign-mediator.html?id=005" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#REP-2025-006</td>
+                            <td><span class="tag tag-primary">Violence</span></td>
+                            <td>Agression physique</td>
+                            <td>Marie Bernard</td>
+                            <td><span class="badge badge-warning">En cours</span></td>
+                            <td><span class="badge badge-danger">Critique</span></td>
+                            <td>12/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal6">Voir</button>
+                                <a href="assign-mediator.html?id=006" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#REP-2025-007</td>
+                            <td><span class="tag tag-primary">Discrimination</span></td>
+                            <td>Discrimination religieuse</td>
+                            <td>Thomas Petit</td>
+                            <td><span class="badge badge-success">Résolu</span></td>
+                            <td><span class="badge badge-info">Moyenne</span></td>
+                            <td>11/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal7">Voir</button>
+                                <a href="assign-mediator.html?id=007" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#REP-2025-008</td>
+                            <td><span class="tag tag-primary">Harcèlement</span></td>
+                            <td>Harcèlement en ligne</td>
+                            <td>Julie Rousseau</td>
+                            <td><span class="badge badge-info">Nouveau</span></td>
+                            <td><span class="badge badge-danger">Haute</span></td>
+                            <td>11/11/2025</td>
+                            <td>
+                                <button class="btn btn-outline btn-sm" data-modal="reportModal8">Voir</button>
+                                <a href="assign-mediator.html?id=008" class="btn btn-primary btn-sm">Assigner</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="pagination-btn" disabled>Précédent</button>
+                <button class="pagination-btn active">1</button>
+                <button class="pagination-btn">2</button>
+                <button class="pagination-btn">3</button>
+                <button class="pagination-btn">Suivant</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modale: Détails signalement (exemple) -->
+    <div id="reportModal1" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Signalement #REP-2025-001</h2>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Informations générales -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem;">Informations générales</h3>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div>
+                            <p style="margin: 0; color: var(--color-text-light); font-size: 0.875rem;">Type d'incident</p>
+                            <p style="margin: 0; font-weight: 600;"><span class="tag tag-primary">Conflit</span></p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; color: var(--color-text-light); font-size: 0.875rem;">Date de l'incident</p>
+                            <p style="margin: 0; font-weight: 600;">14/11/2025 à 10:30</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; color: var(--color-text-light); font-size: 0.875rem;">Lieu</p>
+                            <p style="margin: 0; font-weight: 600;">Bureau Tunis</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; color: var(--color-text-light); font-size: 0.875rem;">Rôle du signalant</p>
+                            <p style="margin: 0; font-weight: 600;">Victime</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; color: var(--color-text-light); font-size: 0.875rem;">Statut</p>
+                            <p style="margin: 0;"><span class="badge badge-warning">En médiation</span></p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; color: var(--color-text-light); font-size: 0.875rem;">Urgence IA</p>
+                            <p style="margin: 0;"><span class="badge badge-info">Moyenne</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auteur -->
+                <div style="margin-bottom: 2rem; padding: 1rem; background: var(--color-background); border-radius: var(--radius-md);">
+                    <h3 style="margin-bottom: 1rem;">Auteur du signalement</h3>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #1e3a8a, #16a34a); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">JD</div>
+                        <div>
+                            <p style="margin: 0; font-weight: 600;">Jean Dupont</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-light);">jean.dupont@example.com</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-light);">+33 6 12 34 56 78</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem;">Description de l'incident</h3>
+                    <div style="background: var(--color-background); padding: 1.5rem; border-radius: var(--radius-md);">
+                        <p style="line-height: 1.8; margin: 0;">
+                            Un conflit est survenu avec un collègue lors d'une réunion d'équipe. 
+                            Des propos déplacés ont été tenus concernant mes compétences professionnelles, 
+                            créant un climat de travail hostile. Plusieurs témoins étaient présents lors de l'incident.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">Actions</h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <a href="assign-mediator.html?id=001" class="btn btn-primary">Assigner un médiateur</a>
+                        <button class="btn btn-secondary">Changer le statut</button>
+                        <button class="btn btn-outline">Contacter l'auteur</button>
+                        <button class="btn btn-outline">Télécharger le rapport</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" data-close-modal>Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/main.js"></script>
+    <script src="../../assets/js/manage-reports.js"></script>
+</body>
+</html>
+

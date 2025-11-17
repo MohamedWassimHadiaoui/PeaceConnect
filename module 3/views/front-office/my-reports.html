@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Signalements - PeaceConnect Module 3</title>
+    <meta name="description" content="Consultez et suivez tous vos signalements">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../assets/css/main.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+    <link rel="stylesheet" href="../../assets/css/responsive.css">
+    <link rel="stylesheet" href="../../assets/css/module3.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="../../index.html" class="navbar-brand">
+                    <span>🕊️</span>
+                    <span>PeaceConnect</span>
+                </a>
+                <button class="navbar-toggle" aria-label="Menu">☰</button>
+                <ul class="navbar-menu">
+                    <li><a href="../../index.html">Accueil</a></li>
+                    <li><a href="my-reports.html" class="active">Mes signalements</a></li>
+                    <li><a href="create-report.html">Créer un signalement</a></li>
+                    <li><a href="../profile.html">Mon Profil</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Liste des signalements -->
+    <section class="section">
+        <div class="container">
+            <div class="admin-header">
+                <div>
+                    <h1>Mes Signalements</h1>
+                    <p style="color: var(--color-text-light);">Consultez et suivez l'état de vos signalements</p>
+                </div>
+                <div>
+                    <a href="create-report.html" class="btn btn-primary">➕ Nouveau signalement</a>
+                </div>
+            </div>
+            
+            <!-- Filtres -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label class="form-label">Rechercher</label>
+                    <input type="text" class="form-control filter-input" data-filter="tbody tr" 
+                           placeholder="ID, titre, type...">
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">Statut</label>
+                    <select id="statusFilter" class="form-control">
+                        <option value="">Tous les statuts</option>
+                        <option value="pending">En attente</option>
+                        <option value="assigned">Assigné</option>
+                        <option value="in_mediation">En médiation</option>
+                        <option value="resolved">Résolu</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">Type</label>
+                    <select id="typeFilter" class="form-control">
+                        <option value="">Tous les types</option>
+                        <option value="conflict">Conflit</option>
+                        <option value="harassment">Harcèlement</option>
+                        <option value="violence">Violence</option>
+                        <option value="discrimination">Discrimination</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tableau des signalements -->
+            <div class="table-container">
+                <table class="table" id="reportsTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable">ID</th>
+                            <th class="sortable">Type</th>
+                            <th class="sortable">Titre</th>
+                            <th class="sortable">Statut</th>
+                            <th class="sortable">Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Exemple de signalements (à remplacer par des données dynamiques) -->
+                        <tr data-status="in_mediation" data-type="conflict">
+                            <td>#REP-2025-001</td>
+                            <td><span class="tag tag-primary">Conflit</span></td>
+                            <td>Conflit au travail avec collègue</td>
+                            <td><span class="badge badge-warning">En médiation</span></td>
+                            <td>15/11/2025</td>
+                            <td>
+                                <a href="report-detail.html?id=001" class="btn btn-outline btn-sm">Voir détails</a>
+                            </td>
+                        </tr>
+                        <tr data-status="assigned" data-type="harassment">
+                            <td>#REP-2025-002</td>
+                            <td><span class="tag tag-primary">Harcèlement</span></td>
+                            <td>Harcèlement moral au lycée</td>
+                            <td><span class="badge badge-info">Assigné</span></td>
+                            <td>10/11/2025</td>
+                            <td>
+                                <a href="report-detail.html?id=002" class="btn btn-outline btn-sm">Voir détails</a>
+                            </td>
+                        </tr>
+                        <tr data-status="resolved" data-type="discrimination">
+                            <td>#REP-2025-003</td>
+                            <td><span class="tag tag-primary">Discrimination</span></td>
+                            <td>Discrimination à l'embauche</td>
+                            <td><span class="badge badge-success">Résolu</span></td>
+                            <td>05/11/2025</td>
+                            <td>
+                                <a href="report-detail.html?id=003" class="btn btn-outline btn-sm">Voir détails</a>
+                            </td>
+                        </tr>
+                        <tr data-status="pending" data-type="violence">
+                            <td>#REP-2025-004</td>
+                            <td><span class="tag tag-primary">Violence</span></td>
+                            <td>Violence verbale en public</td>
+                            <td><span class="badge badge-warning">En attente</span></td>
+                            <td>14/11/2025</td>
+                            <td>
+                                <a href="report-detail.html?id=004" class="btn btn-outline btn-sm">Voir détails</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State (caché par défaut, affiché si aucun résultat) -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <p>Aucun signalement trouvé</p>
+                <a href="create-report.html" class="btn btn-primary">Créer un signalement</a>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="pagination-btn" disabled>Précédent</button>
+                <button class="pagination-btn active">1</button>
+                <button class="pagination-btn">2</button>
+                <button class="pagination-btn">3</button>
+                <button class="pagination-btn">Suivant</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div style="text-align: center;">
+                <p style="margin-bottom: 1rem;">&copy; 2025 PeaceConnect - Module 3. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/main.js"></script>
+    <script src="../../assets/js/list-reports.js"></script>
+</body>
+</html>
+
