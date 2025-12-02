@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeaceConnect - Signalement & Médiation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        .navbar {
+            background: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .navbar-links {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .navbar-links a {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: #64748b;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .navbar-links a:hover {
+            color: #2563eb;
+            background: #f1f5f9;
+        }
+        .navbar-links a.active {
+            color: #2563eb;
+            background: #eff6ff;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            padding: 8rem 2rem 5rem;
+            text-align: center;
+            color: white;
+            margin-top: 60px;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        .btn-outline {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .section {
+            padding: 5rem 2rem;
+        }
+        .section-gray {
+            background: #f8fafc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .section-title h2 {
+            font-size: 2.5rem;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .section-title p {
+            color: #64748b;
+            font-size: 1.125rem;
+        }
+        
+        .access-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .access-card {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+        .access-card:hover {
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }
+        .access-card-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+        .access-card h3 {
+            font-size: 1.5rem;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .access-card p {
+            color: #64748b;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(37,99,235,0.3);
+        }
+        .btn-dark {
+            background: #1e293b;
+            color: white;
+        }
+        .btn-dark:hover {
+            background: #0f172a;
+            transform: translateY(-2px);
+        }
+        
+        footer {
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+        footer p {
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .access-grid { grid-template-columns: 1fr; }
+            .navbar-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+                <a href="index.html" class="navbar-brand">
+                    <span>🕊️</span>
+                    <span>PeaceConnect</span>
+                </a>
+            <div class="navbar-links">
+                <a href="index.html" class="active">Accueil</a>
+                <a href="views/create_report.php">Signaler</a>
+                <a href="views/my_reports.php">Mes signalements</a>
+                <a href="views/dashboard.php">Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Signalement & Médiation</h1>
+        <p>Système intelligent de gestion des conflits</p>
+        <div class="hero-buttons">
+            <a href="views/create_report.php" class="btn btn-success">🚨 Créer un signalement</a>
+            <a href="views/dashboard.php" class="btn btn-outline">📊 Dashboard Admin</a>
+        </div>
+    </section>
+
+    <section class="section section-gray">
+        <div class="container">
+            <div class="section-title">
+                <h2>Accès rapide</h2>
+                <p>Choisissez votre espace de travail</p>
+            </div>
+            
+            <div class="access-grid">
+                <div class="access-card">
+                    <div class="access-card-icon">👥</div>
+                    <h3>Front Office - Utilisateurs</h3>
+                    <p>Interface utilisateur pour créer et suivre les signalements</p>
+                    <a href="views/create_report.php" class="btn btn-primary btn-block">📝 Créer un signalement</a>
+                </div>
+
+                <div class="access-card">
+                    <div class="access-card-icon">⚙️</div>
+                    <h3>Back Office - Administration</h3>
+                    <p>Espace administrateur pour gérer les signalements et médiateurs</p>
+                    <a href="views/dashboard.php" class="btn btn-dark btn-block">📊 Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2025 PeaceConnect - Système de gestion des conflits</p>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem;">Développé par CodeWave</p>
+    </footer>
+</body>
+</html>
