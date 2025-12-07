@@ -10,7 +10,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $user = $userController->getUserByEmail($email);
 
-    if ($user && $user['password'] === $password && $user['role'] === '1') {
+    $passwordValid = false;
+    if ($user) {
+        if (password_verify($password, $user['password'])) {
+            $passwordValid = true;
+        } elseif ($user['password'] === $password) {
+            require_once __DIR__ . '/../../model/User.php';
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $userObj = new User(
+                $user['id_user'],
+                $user['name'],
+                $user['lastname'],
+                $user['email'],
+                $hashedPassword,
+                $user['cin'],
+                $user['tel'],
+                $user['gender'],
+                $user['role'],
+                $user['avatar'] ?? null
+            );
+            $userController->updateUser($userObj, $user['id_user']);
+            $passwordValid = true;
+        }
+    }
+
+    if ($user && $passwordValid && $user['role'] === '1') {
         $_SESSION['admin_id'] = $user['id_user'];
         header('Location: ../backoffice/index.php');
         exit;
@@ -24,14 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Admin Login - Peace</title>
-    <!-- Use template styles -->
     <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="components.css">
     <link rel="stylesheet" href="responsive.css">
 </head>
 <body>
 
-<!-- Template navbar -->
 <nav class="navbar">
     <div class="container navbar-content">
         <div class="navbar-brand">
@@ -48,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <main class="section">
     <div class="container">
-        <div class="card" style="">
+        <div class="card">
             <div class="card-header">
                 <h2 class="card-title">Admin Login</h2>
             </div>

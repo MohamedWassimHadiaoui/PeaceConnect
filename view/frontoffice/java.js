@@ -1,64 +1,113 @@
-function updateCountdown() {
-const targetDate = new Date('2023-11-27T00:00:00');
-    const now = new Date();
-    const difference = targetDate - now;
-
-    if (difference > 0) {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-        document.getElementById('days').textContent = days.toString().padStart(2, '0');
-        document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-        document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-        document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-    } else {
-        document.querySelector('.countdown').innerHTML = '<p>The sale has ended!</p>';
-    }
-}
-
-setInterval(updateCountdown, 1000);
-updateCountdown(); // Initial call
-
+// Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
-        document.querySelector(this.getAttribute('href')).scrollIntoView({
-            behavior: 'smooth'
-        });
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
     });
 });
 
-const nav = document.querySelector('nav ul');
-const toggle = document.createElement('button');
-toggle.textContent = 'Menu';
-toggle.style.display = 'none';
-toggle.addEventListener('click', () => {
-    nav.classList.toggle('show');
-});
-document.querySelector('header .container').appendChild(toggle);
 
-if (window.innerWidth <= 768) {
-    toggle.style.display = 'block';
-}
-//bio
-document.addEventListener("DOMContentLoaded", () => {
-    const bioInput = document.getElementById("bio-input");
-    const savedBio = localStorage.getItem("userBio");
+// Password Strength Checker
+function checkPasswordStrength(password) {
+    let strength = 0;
+    let feedback = [];
 
-    if (savedBio) {
-        bioInput.value = savedBio;
+    // Length check
+    if (password.length >= 8) {
+        strength++;
+    } else {
+        feedback.push("at least 8 characters");
     }
 
-    document.getElementById("save-bio").addEventListener("click", () => {
-        const newBio = bioInput.value.trim();
-        localStorage.setItem("userBio", newBio);
+    // Uppercase letter check
+    if (/[A-Z]/.test(password)) {
+        strength++;
+    } else {
+        feedback.push("uppercase letter");
+    }
 
-        alert(" Your bio has been saved!");
-    });
+    // Lowercase letter check
+    if (/[a-z]/.test(password)) {
+        strength++;
+    } else {
+        feedback.push("lowercase letter");
+    }
+
+    // Number check
+    if (/[0-9]/.test(password)) {
+        strength++;
+    } else {
+        feedback.push("number");
+    }
+
+    // Special character check
+    if (/[^A-Za-z0-9]/.test(password)) {
+        strength++;
+    } else {
+        feedback.push("special character");
+    }
+
+    return { strength, feedback };
+}
+
+function updatePasswordStrengthIndicator() {
+    const passwordInput = document.getElementById("password");
+    if (!passwordInput) return;
+
+    const password = passwordInput.value;
+    const segment1 = document.getElementById("strength-segment-1");
+    const segment2 = document.getElementById("strength-segment-2");
+    const segment3 = document.getElementById("strength-segment-3");
+    const strengthText = document.getElementById("password-strength-text");
+
+    if (!segment1 || !segment2 || !segment3 || !strengthText) return;
+
+    // Reset all segments
+    segment1.className = "strength-segment";
+    segment2.className = "strength-segment";
+    segment3.className = "strength-segment";
+
+    if (password.length === 0) {
+        strengthText.textContent = "";
+        return;
+    }
+
+    const { strength, feedback } = checkPasswordStrength(password);
+
+    if (strength <= 2) {
+        // Weak - Red
+        segment1.className = "strength-segment weak";
+        strengthText.textContent = "Weak password. Add: " + feedback.slice(0, 2).join(", ");
+        strengthText.style.color = "#f44336";
+    } else if (strength === 3) {
+        // Medium - Yellow
+        segment1.className = "strength-segment weak";
+        segment2.className = "strength-segment medium";
+        strengthText.textContent = "Medium password. Add: " + feedback.slice(0, 1).join(", ");
+        strengthText.style.color = "#ff9800";
+    } else {
+        // Strong - Green
+        segment1.className = "strength-segment weak";
+        segment2.className = "strength-segment medium";
+        segment3.className = "strength-segment strong";
+        strengthText.textContent = "Strong password!";
+        strengthText.style.color = "#4caf50";
+    }
+}
+
+// Initialize password strength indicator on page load
+document.addEventListener("DOMContentLoaded", function() {
+    const passwordInput = document.getElementById("password");
+    if (passwordInput) {
+        passwordInput.addEventListener("input", updatePasswordStrengthIndicator);
+        passwordInput.addEventListener("keyup", updatePasswordStrengthIndicator);
+    }
 });
-
 
 function saisie() {
     let name = document.getElementById("name").value.trim();
@@ -69,6 +118,7 @@ function saisie() {
     let cin = document.getElementById("cin").value.trim();
     let tel = document.getElementById("tel").value.trim();
     let gender = document.querySelector('input[name="gender"]:checked');
+    let captcha = document.getElementById("captcha");
 
     let errorBox = document.getElementById("errorBox");
     errorBox.innerHTML = "";
@@ -92,13 +142,14 @@ function saisie() {
         return false;
     }
 
- 
+    // Enhanced password validation with complexity requirements
+    const passwordStrength = checkPasswordStrength(pass1);
     if (pass1.length < 8) {
         errorBox.innerHTML = "Password must be at least 8 characters long.";
         return false;
     }
-    if (!/^[A-Za-z0-9]+$/.test(pass1)) {
-        errorBox.innerHTML = "Password must not contain special characters.";
+    if (passwordStrength.strength < 3) {
+        errorBox.innerHTML = "Password is too weak. Please include uppercase, lowercase, numbers, and special characters.";
         return false;
     }
     if (pass1 !== pass2) {
@@ -120,25 +171,12 @@ function saisie() {
         return false;
     }
 
+    // CAPTCHA validation (basic check - server will verify the actual answer)
+    if (captcha && (!captcha.value || isNaN(captcha.value) || parseInt(captcha.value) < 0)) {
+        errorBox.innerHTML = "Please solve the CAPTCHA math problem correctly.";
+        return false;
+    }
+
     return true;
-}
-
-
-function submit() {
-    let role = document.querySelector("input[name='role']:checked");
-    let errorBox = document.getElementById("errorBox");
-
-    if (!role) {
-        errorBox.innerHTML = "Please select a role.";
-        return;
-    }
-
-    errorBox.innerHTML = "";
-
-    if (role.value === "admin") {
-        window.location.href = "admin.html";
-    } else {
-        window.location.href = "form.html";
-    }
 }
 

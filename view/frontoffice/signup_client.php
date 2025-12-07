@@ -7,6 +7,14 @@ require_once __DIR__ . '/../../model/User.php';
 $userController = new UserController();
 $error = '';
 
+// Generate CAPTCHA if not already set (only on GET requests or first load)
+if (!isset($_SESSION['captcha_answer'])) {
+    $num1 = rand(1, 10);
+    $num2 = rand(1, 10);
+    $_SESSION['captcha_question'] = $num1 . ' + ' . $num2;
+    $_SESSION['captcha_answer'] = $num1 + $num2;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name     = $_POST['name'] ?? '';
     $lastname = $_POST['lastname'] ?? '';
@@ -16,33 +24,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tel      = $_POST['tel'] ?? '';
     $gender   = $_POST['gender'] ?? '';
     $role     = 'client';
+    $captcha_answer = isset($_POST['captcha']) ? (int)$_POST['captcha'] : 0;
 
-    $user = new User(
-        null,
-        $name,
-        $lastname,
-        $email,
-        $password,
-        $cin,
-        $tel,
-        $gender,
-        $role
-    );
+    // Validate CAPTCHA
+    if (!isset($_SESSION['captcha_answer']) || $captcha_answer !== $_SESSION['captcha_answer']) {
+        $error = 'CAPTCHA verification failed. Please solve the math problem correctly.';
+        // Generate new CAPTCHA for retry
+        $num1 = rand(1, 10);
+        $num2 = rand(1, 10);
+        $_SESSION['captcha_question'] = $num1 . ' + ' . $num2;
+        $_SESSION['captcha_answer'] = $num1 + $num2;
+    } else {
+        // Hash the password before storing
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    try {
-        $userController->addUser($user);
-        // fixed the broken line "$\ninsertedUser"
-        $insertedUser = $userController->getUserByEmail($email);
+        $user = new User(
+            null,
+            $name,
+            $lastname,
+            $email,
+            $hashedPassword,
+            $cin,
+            $tel,
+            $gender,
+            $role,
+            null
+        );
 
-        if ($insertedUser) {
-            $_SESSION['user_id'] = $insertedUser['id_user'];
-            header('Location: profile.php');
-            exit;
-        } else {
-            $error = 'Signup succeeded but user could not be loaded.';
+        try {
+            $userController->addUser($user);
+            // fixed the broken line "$\ninsertedUser"
+            $insertedUser = $userController->getUserByEmail($email);
+
+            if ($insertedUser) {
+                // Clear CAPTCHA on successful signup
+                unset($_SESSION['captcha_answer']);
+                unset($_SESSION['captcha_question']);
+                $_SESSION['user_id'] = $insertedUser['id_user'];
+                header('Location: profile.php');
+                exit;
+            } else {
+                $error = 'Signup succeeded but user could not be loaded.';
+            }
+        } catch (Exception $e) {
+            $error = 'Error during signup: ' . $e->getMessage();
         }
-    } catch (Exception $e) {
-        $error = 'Error during signup: ' . $e->getMessage();
     }
 }
 ?>
@@ -136,6 +162,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             placeholder="Password"
                             required
                         >
+                        <div class="password-strength-indicator">
+                            <div class="strength-segment" id="strength-segment-1"></div>
+                            <div class="strength-segment" id="strength-segment-2"></div>
+                            <div class="strength-segment" id="strength-segment-3"></div>
+                        </div>
+                        <small class="password-strength-text" id="password-strength-text"></small>
                     </div>
 
                     <div class="form-group">
@@ -184,6 +216,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="radio" id="genderF" name="gender" value="F">
                             <label for="genderF" class="form-check-label">Female</label>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="captcha" class="form-label">
+                            CAPTCHA: What is <?= htmlspecialchars($_SESSION['captcha_question'] ?? '?') ?>?
+                        </label>
+                        <input
+                            type="number"
+                            id="captcha"
+                            name="captcha"
+                            class="form-control"
+                            placeholder="Enter the answer"
+                            required
+                            min="0"
+                        >
+                        <small class="verification-code-help">Please solve the math problem to verify you're human.</small>
                     </div>
 
                 </div>

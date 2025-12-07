@@ -6,21 +6,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     $uc = new userController();
 
-    
+    // Hash the password before storing
+    $hashedPassword = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
     $user = new User(
         null,
         $_POST['name'],
         $_POST['lastname'],
         $_POST['email'],
-        $_POST['password'],
+        $hashedPassword,
         $_POST['cin'],
         $_POST['tel'],
         $_POST['gender'],
-        $_POST['role']
+        $_POST['role'],
+        null
     );
 
-    $uc->addUser($user);²
+    $uc->addUser($user);
 
     header("Location: index.php");
     exit;

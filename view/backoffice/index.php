@@ -8,14 +8,70 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $userController = new UserController();
-$users = $userController->listUsers();
 
 function e($v) {
     return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8');
 }
 
-$search     = $_POST['search'] ?? '';
-$roleFilter = $_POST['role'] ?? '';
+// Get filter parameters from GET (form uses method="get")
+$search     = $_GET['search'] ?? '';
+$roleFilter = $_GET['role'] ?? '';
+
+// Map role filter to database values
+// Database stores: 0 = client, 1 = admin (integers)
+$roleFilterValue = null;
+if ($roleFilter === 'admin') {
+    $roleFilterValue = 1; // Admin is stored as 1 in database
+} elseif ($roleFilter === 'client') {
+    $roleFilterValue = 0; // Client is stored as 0 in database
+}
+
+// Get all users
+$allUsers = $userController->listUsers();
+
+// Filter users based on search and role
+$users = [];
+foreach ($allUsers as $u) {
+    $fullName = trim(($u['name'] ?? '') . ' ' . ($u['lastname'] ?? ''));
+    
+    // Filter by search (name or email)
+    if ($search !== '') {
+        $nameMatch = stripos($u['name'] ?? '', $search) !== false;
+        $lastnameMatch = stripos($u['lastname'] ?? '', $search) !== false;
+        $emailMatch = stripos($u['email'] ?? '', $search) !== false;
+        $fullNameMatch = stripos($fullName, $search) !== false;
+        
+        if (!$nameMatch && !$lastnameMatch && !$emailMatch && !$fullNameMatch) {
+            continue;
+        }
+    }
+    
+    // Filter by role - handle both integer (0/1) and string ('client'/'admin') formats
+    if ($roleFilterValue !== null) {
+        $userRole = $u['role'] ?? '';
+        // Convert to integer for comparison (database stores as int, but might be string)
+        $userRoleInt = (int)$userRole;
+        
+        // Also check if it's stored as string 'admin' or 'client'
+        $userRoleStr = strtolower((string)$userRole);
+        
+        // Check if user role matches the filter
+        $roleMatches = false;
+        if ($roleFilterValue === 1) {
+            // Looking for admin: check for 1, '1', or 'admin'
+            $roleMatches = ($userRoleInt === 1 || $userRoleStr === '1' || $userRoleStr === 'admin');
+        } elseif ($roleFilterValue === 0) {
+            // Looking for client: check for 0, '0', or 'client'
+            $roleMatches = ($userRoleInt === 0 || $userRoleStr === '0' || $userRoleStr === 'client');
+        }
+        
+        if (!$roleMatches) {
+            continue;
+        }
+    }
+    
+    $users[] = $u;
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -89,10 +145,15 @@ $roleFilter = $_POST['role'] ?? '';
                         </select>
                     </div>
 
-                    <div class="form-group" style="align-self: flex-end;">
-                        <button type="submit" class="btn btn-primary btn-block">
+                    <div class="form-group" style="align-self: flex-end; display: flex; gap: var(--spacing-sm);">
+                        <button type="submit" class="btn btn-primary">
                             Filtrer
                         </button>
+                        <?php if ($search !== '' || $roleFilter !== ''): ?>
+                            <a href="index.php" class="btn btn-outline">
+                                Réinitialiser
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -117,51 +178,46 @@ $roleFilter = $_POST['role'] ?? '';
                     </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($users as $u): ?>
-                        <?php
-                        $fullName = trim(($u['name'] ?? '') . ' ' . ($u['lastname'] ?? ''));
-
-                        if ($search !== '' &&
-                            stripos($fullName . ' ' . $u['email'], $search) === false) {
-                            continue;
-                        }
-
-                        if ($roleFilter !== '' && $u['role'] !== $roleFilter) {
-                            continue;
-                        }
-                        ?>
-                        <tr>
-                            <td>#<?= e($u['id_user']) ?></td>
-                            <td><?= e($fullName) ?></td>
-                            <td><?= e($u['email']) ?></td>
-                            <td><?= e($u['cin']) ?></td>
-                            <td>
-                                <span class="badge <?= $u['role'] === 'admin'
-                                        ? 'badge-danger'
-                                        : 'badge-success' ?>">
-                                    <?= e(ucfirst($u['role'])) ?>
-                                </span>
-                            </td>
-                            <td>
-                                <a href="update_user.php?id=<?= e($u['id_user']) ?>"
-                                   class="btn btn-outline btn-sm">
-                                    Voir
-                                </a>
-                                <a href="delete_user.php?id=<?= e($u['id_user']) ?>"
-                                   class="btn btn-secondary btn-sm"
-                                   onclick="return confirm('Supprimer cet utilisateur ?');">
-                                    Supprimer
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-
                     <?php if (empty($users)): ?>
                         <tr>
-                            <td colspan="6" class="text-light">
-                                Aucun utilisateur trouvé.
+                            <td colspan="6" class="text-center" style="padding: 2rem; color: #666;">
+                                <?php if ($search !== '' || $roleFilter !== ''): ?>
+                                    Aucun utilisateur trouvé avec ces critères de recherche.
+                                <?php else: ?>
+                                    Aucun utilisateur trouvé.
+                                <?php endif; ?>
                             </td>
                         </tr>
+                    <?php else: ?>
+                        <?php foreach ($users as $u): ?>
+                            <?php
+                            $fullName = trim(($u['name'] ?? '') . ' ' . ($u['lastname'] ?? ''));
+                            ?>
+                            <tr>
+                                <td>#<?= e($u['id_user']) ?></td>
+                                <td><?= e($fullName) ?></td>
+                                <td><?= e($u['email']) ?></td>
+                                <td><?= e($u['cin']) ?></td>
+                                <td>
+                                    <span class="badge <?= ($u['role'] ?? '') === 'admin'
+                                            ? 'badge-danger'
+                                            : 'badge-success' ?>">
+                                        <?= e(ucfirst($u['role'] ?? 'client')) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="update_user.php?id=<?= e($u['id_user']) ?>"
+                                       class="btn btn-outline btn-sm">
+                                        Voir
+                                    </a>
+                                    <a href="delete_user.php?id=<?= e($u['id_user']) ?>"
+                                       class="btn btn-secondary btn-sm"
+                                       onclick="return confirm('Supprimer cet utilisateur ?');">
+                                        Supprimer
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                     </tbody>
                 </table>

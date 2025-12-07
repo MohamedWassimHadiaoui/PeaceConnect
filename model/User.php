@@ -11,8 +11,9 @@ class User {
     private $tel;
     private $gender;
     private $role;
+    private $avatar;
 
-    public function __construct($id_user, $name, $lastname, $email, $password, $cin, $tel, $gender, $role) {
+    public function __construct($id_user, $name, $lastname, $email, $password, $cin, $tel, $gender, $role, $avatar = null) {
         $this->id_user = $id_user;
         $this->name = $name;
         $this->lastname = $lastname;
@@ -22,6 +23,7 @@ class User {
         $this->tel = $tel;
         $this->gender = $gender;
         $this->role = $role;
+        $this->avatar = $avatar;
     }
     public function getId() {
         return $this->id_user;
@@ -93,6 +95,14 @@ class User {
 
     public function setRole($role) {
         $this->role = $role;
+    }
+
+    public function getAvatar() {
+        return $this->avatar;
+    }
+
+    public function setAvatar($avatar) {
+        $this->avatar = $avatar;
     }
 }
 

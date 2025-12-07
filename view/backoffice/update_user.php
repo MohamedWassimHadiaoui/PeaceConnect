@@ -43,7 +43,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $_POST["cin"],
         $_POST["tel"],
         $_POST["gender"],
-        $_POST["role"]
+        $_POST["role"],
+        $userData["avatar"] ?? null
     );
 
     $uc->updateUser($updatedUser, $_POST["id_user"]);
