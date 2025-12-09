@@ -1,8 +1,5 @@
 <?php
-/**
- * Configuration de la connexion à la base de données
- * Utilise le pattern Singleton pour une seule instance de connexion
- */
+
 class Config {
     private static $instance = null;
     private $pdo;
@@ -64,5 +61,6 @@ class Config {
     }
 }
 ?>
+
 
 
