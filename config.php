@@ -1,23 +1,24 @@
 <?php
 $host = 'localhost';
-$user = 'root';
-$pass = '';
-$dbname = 'peaceconnect';
+$dbname = 'peaceconnect_reports';
+$username = 'root';
+$password = '';
 
-$conn = mysqli_connect($host, $user, $pass, $dbname);
-
-if (!$conn) {
-    die(json_encode(['error' => 'Connection failed: ' . mysqli_connect_error()]));
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
-mysqli_set_charset($conn, "utf8mb4");
-
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Content-Type: application/json; charset=UTF-8');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit();
+function getConnection() {
+    global $pdo;
+    return $pdo;
 }
-?>
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+define('BASE_URL', '/Git/5_Reports_Sessions/');
