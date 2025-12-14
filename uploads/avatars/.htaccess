@@ -1,9 +1,0 @@
-# Allow access to avatar images
-Order Allow,Deny
-Allow from all
-
-# Prevent execution of PHP files
-<FilesMatch "\.php$">
-    Deny from all
-</FilesMatch>
-

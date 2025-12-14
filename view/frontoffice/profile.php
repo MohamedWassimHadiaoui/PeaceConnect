@@ -1,570 +1,283 @@
-<?php
-session_start();
+﻿<?php
+include __DIR__ . '/partials/header.php';
+require_once __DIR__ . "/../../Controller/authMiddleware.php";
+requireLogin();
+require_once __DIR__ . "/../../Controller/userController.php";
 
-require_once __DIR__ . '/../../controller/userController.php';
-require_once __DIR__ . '/../../model/User.php';
+$uc = new UserController();
+$user = $uc->getUserById($_SESSION['user_id']);
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login_client.php');
-    exit;
+// Generate 2FA secret if not exists
+if (empty($user['two_factor_secret'])) {
+    $secret = $uc->generate2FASecret($user['id']);
+    $user['two_factor_secret'] = $secret;
 }
+$current2FACode = null;
 
-$userController = new UserController();
-$userId = $_SESSION['user_id'];
-$user   = $userController->getUserById($userId);
-
-if (!$user) {
-    session_destroy();
-    header('Location: login_client.php');
-    exit;
-}
-
-// Handle avatar upload
-$avatarError = '';
-$avatarSuccess = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_avatar'])) {
-    if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-        $file = $_FILES['avatar'];
-        
-        // Validate file
-        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        $maxSize = 5 * 1024 * 1024; // 5MB
-        
-        // Check file type
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-        
-        if (!in_array($mimeType, $allowedTypes)) {
-            $avatarError = 'Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.';
-        } elseif ($file['size'] > $maxSize) {
-            $avatarError = 'File is too large. Maximum size is 5MB.';
-        } else {
-            // Create uploads directory if it doesn't exist
-            $uploadDir = __DIR__ . '/../../uploads/avatars/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            
-            // Generate unique filename
-            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $filename = 'avatar_' . $userId . '_' . time() . '.' . $extension;
-            $filepath = $uploadDir . $filename;
-            
-            // Delete old avatar if exists
-            if (!empty($user['avatar']) && file_exists($uploadDir . $user['avatar'])) {
-                unlink($uploadDir . $user['avatar']);
-            }
-            
-            // Move uploaded file
-            if (move_uploaded_file($file['tmp_name'], $filepath)) {
-                // Verify file was moved and is readable
-                if (file_exists($filepath) && is_readable($filepath)) {
-                    // Update database
-                    if ($userController->updateAvatar($userId, $filename)) {
-                        $avatarSuccess = 'Avatar uploaded successfully!';
-                        $user = $userController->getUserById($userId); // Refresh user data
-                        // Force refresh of avatar path
-                        if (!empty($user['avatar'])) {
-                            $currentAvatar = '../../uploads/avatars/' . htmlspecialchars($user['avatar']);
-                        }
-                    } else {
-                        $avatarError = 'Failed to update avatar in database. Please check if the avatar column exists.';
-                        // Delete uploaded file if database update failed
-                        if (file_exists($filepath)) {
-                            unlink($filepath);
-                        }
-                    }
-                } else {
-                    $avatarError = 'File was uploaded but is not accessible. Please check file permissions.';
-                }
-            } else {
-                $errorMsg = 'Failed to upload file. ';
-                if (!is_writable($uploadDir)) {
-                    $errorMsg .= 'Upload directory is not writable.';
-                } else {
-                    $errorMsg .= 'Please try again.';
-                }
-                $avatarError = $errorMsg;
-                error_log('Avatar upload failed. Temp: ' . $file['tmp_name'] . ', Target: ' . $filepath . ', Error: ' . $file['error']);
-            }
-        }
-    } else {
-        $errorCode = $_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE;
-        switch ($errorCode) {
-            case UPLOAD_ERR_NO_FILE:
-                $avatarError = 'Please select a file to upload.';
-                break;
-            case UPLOAD_ERR_INI_SIZE:
-            case UPLOAD_ERR_FORM_SIZE:
-                $avatarError = 'File is too large. Maximum size is 5MB.';
-                break;
-            default:
-                $avatarError = 'An error occurred during file upload. Please try again.';
-        }
-    }
-}
-
-// Handle avatar deletion
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_avatar'])) {
-    if (!empty($user['avatar'])) {
-        $uploadDir = __DIR__ . '/../../uploads/avatars/';
-        $filepath = $uploadDir . $user['avatar'];
-        
-        // Delete file
-        if (file_exists($filepath)) {
-            unlink($filepath);
-        }
-        
-        // Update database
-        if ($userController->deleteAvatar($userId)) {
-            $avatarSuccess = 'Avatar deleted successfully.';
-            $user = $userController->getUserById($userId); // Refresh user data
-        } else {
-            $avatarError = 'Failed to delete avatar from database.';
-        }
-    }
-}
-
-// Handle password change
-$passwordError = '';
-$passwordSuccess = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
-    $currentPassword = $_POST['current_password'] ?? '';
-    $newPassword = $_POST['new_password'] ?? '';
-    $confirmPassword = $_POST['confirm_password'] ?? '';
-    
-    // Validate current password
-    if (empty($currentPassword)) {
-        $passwordError = 'Please enter your current password.';
-    } elseif (!password_verify($currentPassword, $user['password'])) {
-        $passwordError = 'Current password is incorrect.';
-    } elseif (empty($newPassword)) {
-        $passwordError = 'Please enter a new password.';
-    } elseif (strlen($newPassword) < 8) {
-        $passwordError = 'New password must be at least 8 characters long.';
-    } elseif ($newPassword !== $confirmPassword) {
-        $passwordError = 'New passwords do not match.';
-    } else {
-        // Update password
-        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $updatedUser = new User(
-            $user['id_user'],
-            $user['name'],
-            $user['lastname'],
-            $user['email'],
-            $hashedPassword,
-            $user['cin'],
-            $user['tel'],
-            $user['gender'],
-            $user['role'],
-            $user['avatar'] ?? null
-        );
-        $userController->updateUser($updatedUser, $user['id_user']);
-        $passwordSuccess = 'Password changed successfully!';
-        // Refresh user data
-        $user = $userController->getUserById($userId);
-    }
-}
-
-function e($v) {
-    return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8');
-}
-
-// Get avatar path
-$defaultAvatars = ['avatar2.png', 'avatar3.png', 'avatar4.png', 'avatar5.png', 'avatar7.png'];
-$currentAvatar = '';
-
-if (!empty($user['avatar'])) {
-    // User has uploaded avatar - path from view/frontoffice/ to uploads/avatars/
-    $avatarPath = '../../uploads/avatars/' . htmlspecialchars($user['avatar']);
-    // Check if file exists
-    $fullPath = __DIR__ . '/../../uploads/avatars/' . htmlspecialchars($user['avatar']);
-    if (file_exists($fullPath)) {
-        $currentAvatar = $avatarPath;
-    } else {
-        // File doesn't exist, use default
-        if (!isset($_SESSION['user_avatar'])) {
-            $_SESSION['user_avatar'] = $defaultAvatars[array_rand($defaultAvatars)];
-        }
-        $currentAvatar = $_SESSION['user_avatar'];
-    }
-} else {
-    // Use default avatar from session or random
-    if (!isset($_SESSION['user_avatar'])) {
-        $_SESSION['user_avatar'] = $defaultAvatars[array_rand($defaultAvatars)];
-    }
-    $currentAvatar = $_SESSION['user_avatar'];
-}
+$errors = $_SESSION['errors'] ?? [];
+$success = $_SESSION['success'] ?? null;
+unset($_SESSION['errors'], $_SESSION['success']);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Peace</title>
-
-    <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="components.css">
-    <link rel="stylesheet" href="responsive.css">
+    <title>My Profile - PeaceConnect</title>
+    <link rel="icon" type="image/svg+xml" href="<?= $assets ?>favicon.svg">
+    <link rel="stylesheet" href="<?= $assets ?>style.css?v=<?php echo filemtime(__DIR__ . "/../assets/style.css"); ?>">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .profile-header { text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(16,185,129,0.1)); border-radius: 24px; margin-bottom: 2rem; }
+        .profile-avatar { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto 1.5rem; box-shadow: 0 10px 30px rgba(99,102,241,0.3); overflow: hidden; border: 4px solid var(--bg-card); }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-name { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .profile-email { color: var(--text-muted); margin-bottom: 1rem; }
+        .profile-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 2rem; margin-bottom: 2rem; }
+        .profile-section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--border-color); display: flex; align-items: center; gap: 0.5rem; }
+        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .tab-btn { padding: 0.75rem 1.5rem; border-radius: 10px; border: none; background: var(--bg-card); color: var(--text-primary); cursor: pointer; font-weight: 500; transition: all 0.3s; border: 1px solid var(--border-color); }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .twofa-box { background: var(--bg-input); border-radius: 12px; padding: 1.5rem; text-align: center; }
+        .twofa-status { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+        .twofa-status.enabled { color: #10b981; }
+        .twofa-status.disabled { color: #ef4444; }
+        .secret-key { background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 1.1rem; letter-spacing: 0.2rem; margin: 1rem 0; }
+        .current-code { font-size: 2rem; font-weight: 700; color: var(--primary); letter-spacing: 0.3rem; }
+        .password-requirements { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+        .password-requirements.valid { color: #10b981; }
+        .password-requirements.invalid { color: #ef4444; }
+    </style>
 </head>
-
 <body>
+    <div class="bg-animation"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <?php include 'partials/navbar.php'; ?>
 
-<!-- Navbar -->
-<nav class="navbar">
-    <div class="container navbar-content">
-        <a href="role.html" class="navbar-brand">
-            <span>🕊️ Peace</span>
-        </a>
-
-        <button class="navbar-toggle">☰</button>
-
-        <ul class="navbar-menu">
-            <li><a href="role.html" class="super-button">Home</a></li>
-            <li><a href="#deals" class="super-button">Forum</a></li>
-            <li><a href="#deals" class="super-button">Événements</a></li>
-            <li><a href="#contact" class="super-button">Signaler</a></li>
-        </ul>
-    </div>
-</nav>
-
-
-<div class="container mt-4">
-
-    <!-- Profile Header -->
-    <div class="card profile-header d-flex align-items-center">
-        <img src="<?= e($currentAvatar) ?>"
-             alt="User Avatar"
-             class="profile-photo profile-avatar"
-             id="userAvatarImage"
-             onerror="this.onerror=null; this.src='<?= e($defaultAvatars[0] ?? 'avatar2.png') ?>';">
-
-        <div>
-            <h1 class="mb-1"><?= e($user['name'] . " " . $user['lastname']) ?></h1>
-            <p class="text-light mb-1"><?= e($user['email']) ?></p>
-            <p class="text-light mb-3">Member since <?= date("F Y") ?></p>
-
-            <a href="#" class="btn" onclick="toggleAvatarForm(); return false;"><?= !empty($user['avatar']) ? 'Change Avatar' : 'Upload Avatar' ?></a>
-            <?php if (!empty($user['avatar'])): ?>
-                <a href="#" class="btn" onclick="if(confirm('Are you sure you want to delete your avatar?')) { document.getElementById('deleteAvatarForm').submit(); } return false;">Delete Avatar</a>
-            <?php endif; ?>
-            <a href="#" class="btn" onclick="togglePasswordForm(); return false;">Change Password</a>
-            <a href="setup_2fa.php" class="btn"><?= (isset($user['two_factor_enabled']) && $user['two_factor_enabled'] == 1) ? 'Manage 2FA' : 'Setup 2FA' ?></a>
-            <a href="#" class="btn">Delete Profile</a>
+    <main class="main">
+        <div class="container-sm">
             
-            <!-- Hidden form for avatar deletion -->
-            <form id="deleteAvatarForm" method="post" style="display: none;">
-                <input type="hidden" name="delete_avatar" value="1">
-            </form>
-        </div>
-    </div>
-
-
-    <!-- Tabs -->
-    <div class="tabs mt-4">
-        <ul class="tabs-list">
-            <li class="tab-item active">Profile</li>
-            <li class="tab-item">Contributions</li>
-            <li class="tab-item">Settings</li>
-        </ul>
-    </div>
-
-
-    <!-- Avatar Upload Form (Hidden by default) -->
-    <div id="avatarUploadForm" class="card mt-4 d-none">
-        <div class="card-header">
-            <div class="card-title"><?= !empty($user['avatar']) ? 'Change Avatar' : 'Upload Avatar' ?></div>
-        </div>
-        <div class="card-body">
-            <?php if (!empty($avatarError)): ?>
-                <div class="alert alert-error mb-3">
-                    <?= htmlspecialchars($avatarError) ?>
-                </div>
+            <?php if ($success): ?>
+            <div class="alert alert-success"><div><?= htmlspecialchars($success) ?></div></div>
             <?php endif; ?>
-            <?php if (!empty($avatarSuccess)): ?>
-                <div class="alert alert-info mb-3">
-                    <?= htmlspecialchars($avatarSuccess) ?>
-                </div>
+
+            <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger"><div><?php foreach($errors as $e) echo htmlspecialchars($e).'<br>'; ?></div></div>
             <?php endif; ?>
-            
-            <form method="post" enctype="multipart/form-data" action="" id="avatarUploadFormElement" novalidate>
-                <input type="hidden" name="upload_avatar" value="1">
-                
-                <div class="form-group">
-                    <label for="avatar" class="form-label">Select Image</label>
-                    <input
-                        type="file"
-                        id="avatar"
-                        name="avatar"
-                        class="form-control"
-                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                    >
-                    <small class="form-help">
-                        Accepted formats: JPEG, PNG, GIF, WebP. Maximum size: 5MB
-                    </small>
-                </div>
-                
-                <div id="avatarPreview" class="d-none" style="margin: 20px 0; text-align: center;">
-                    <p class="text-light mb-2">Preview:</p>
-                    <img id="avatarPreviewImg" src="" alt="Preview" class="avatar-preview-image">
-                </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Upload Avatar</button>
-                    <button type="button" class="btn" onclick="toggleAvatarForm()">Cancel</button>
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <?php if (!empty($user['avatar'])): ?>
+                    <img src="../../<?= htmlspecialchars($user['avatar']) ?>" alt="Avatar">
+                    <?php else: ?><?= htmlspecialchars(strtoupper(substr((string)($user['name'] ?? 'U'), 0, 1))) ?><?php endif; ?>
                 </div>
-            </form>
-        </div>
-    </div>
+                <div class="profile-name"><?= htmlspecialchars($user['name'] . ' ' . ($user['lastname'] ?? '')) ?></div>
+                <div class="profile-email"><?= htmlspecialchars($user['email']) ?></div>
+                <span class="badge <?= ($user['role'] ?? '') === 'admin' ? 'badge-high' : 'badge-assigned' ?>">
+                    <?= ($user['role'] ?? '') === 'admin' ? 'Administrator' : 'Member' ?>
+                </span>
+                <?php if ($user['two_factor_enabled']): ?>
+                <span class="badge" style="background:rgba(16,185,129,0.2);color:#10b981;margin-left:0.5rem">2FA Enabled</span>
+                <?php endif; ?>
+            </div>
 
-    <!-- Password Change Form (Hidden by default) -->
-    <div id="passwordChangeForm" class="card mt-4 d-none">
-        <div class="card-header">
-            <div class="card-title">Change Password</div>
-        </div>
-        <div class="card-body">
-            <?php if (!empty($passwordError)): ?>
-                <div class="alert alert-error mb-3">
-                    <?= htmlspecialchars($passwordError) ?>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="profile">Edit profile</button>
+                <button class="tab-btn" data-tab="password">Password</button>
+                <button class="tab-btn" data-tab="2fa">Two-factor auth</button>
+            </div>
+
+            <div id="profile" class="tab-content active">
+                <div class="profile-card">
+                    <h3 class="profile-section-title">Profile information</h3>
+                    
+                    <form id="profileForm" action="../../Controller/userController.php" method="POST" enctype="multipart/form-data" novalidate>
+                        <input type="hidden" name="action" value="update_profile">
+                        <input type="hidden" name="id" value="<?= $user['id'] ?>">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>First Name</label>
+                                <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($user['name']) ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Last Name</label>
+                                <input type="text" name="lastname" class="form-control" value="<?= htmlspecialchars($user['lastname'] ?? '') ?>">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Phone</label>
+                                <input type="text" name="tel" class="form-control" placeholder="Your phone number" value="<?= htmlspecialchars($user['tel'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Gender</label>
+                                <select name="gender" class="form-control">
+                                    <option value="">-- Select --</option>
+                                    <option value="M" <?= ($user['gender']??'')==='M'?'selected':'' ?>>Male</option>
+                                    <option value="F" <?= ($user['gender']??'')==='F'?'selected':'' ?>>Female</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <input type="file" name="avatar" class="form-control" accept="image/*">
+                            <div class="form-text" style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem">JPG, PNG or GIF (max 5MB)</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem">
+                            Save changes
+                        </button>
+                    </form>
                 </div>
-            <?php endif; ?>
-            <?php if (!empty($passwordSuccess)): ?>
-                <div class="alert alert-info mb-3">
-                    <?= htmlspecialchars($passwordSuccess) ?>
+            </div>
+
+            <div id="password" class="tab-content">
+                <div class="profile-card">
+                    <h3 class="profile-section-title">Change password</h3>
+                    
+                    <form id="passwordForm" action="../../Controller/userController.php" method="POST" novalidate>
+                        <input type="hidden" name="action" value="change_password">
+                        <input type="hidden" name="id" value="<?= $user['id'] ?>">
+
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" name="current_password" class="form-control" placeholder="Enter current password">
+                        </div>
+
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Min 8 chars, uppercase, lowercase, number">
+                            <div id="password-strength" class="password-requirements">
+                                Password must contain: 8+ characters, uppercase, lowercase, number
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" name="confirm_password" class="form-control" placeholder="Repeat new password">
+                        </div>
+
+                        <button type="submit" class="btn btn-warning" style="width:100%;margin-top:1rem">
+                            Change password
+                        </button>
+                    </form>
                 </div>
-            <?php endif; ?>
-            
-            <form method="post" action="">
-                <input type="hidden" name="change_password" value="1">
-                
-                <div class="form-group">
-                    <label for="current_password" class="form-label">Current Password</label>
-                    <input
-                        type="password"
-                        id="current_password"
-                        name="current_password"
-                        class="form-control"
-                        placeholder="Enter your current password"
-                        required
-                    >
-                </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="new_password" class="form-label">New Password</label>
-                    <input
-                        type="password"
-                        id="new_password"
-                        name="new_password"
-                        class="form-control"
-                        placeholder="Enter new password (min. 8 characters)"
-                        required
-                        minlength="8"
-                    >
-                </div>
+            <div id="2fa" class="tab-content">
+                <div class="profile-card">
+                    <h3 class="profile-section-title">Two-factor authentication</h3>
+                    
+                    <div class="twofa-box">
+                        <div class="twofa-status <?= $user['two_factor_enabled'] ? 'enabled' : 'disabled' ?>">
+                            <?= $user['two_factor_enabled'] ? '2FA is enabled' : '2FA is disabled' ?>
+                        </div>
+                        
+                        <p style="color:var(--text-muted);margin-bottom:1rem">
+                            Two-factor authentication adds an extra layer of security to your account.
+                        </p>
 
-                <div class="form-group">
-                    <label for="confirm_password" class="form-label">Confirm New Password</label>
-                    <input
-                        type="password"
-                        id="confirm_password"
-                        name="confirm_password"
-                        class="form-control"
-                        placeholder="Confirm new password"
-                        required
-                        minlength="8"
-                    >
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Update Password</button>
-                    <button type="button" class="btn" onclick="togglePasswordForm()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Grid Layout -->
-    <div class="grid grid-2 mt-4">
-
-        <!-- About Me -->
-        <div>
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">About Me</div>
-                </div>
-
-                <div class="card-body">
-                    <table class="mb-4 w-100">
-                        <tr>
-                            <td class="text-light">Full Name:</td>
-                            <td><?= e($user['name'] . " " . $user['lastname']) ?></td>
-                        </tr>
-                        <tr>
-                            <td class="text-light">Email:</td>
-                            <td><?= e($user['email']) ?></td>
-                        </tr>
-                        <tr>
-                            <td class="text-light">CIN:</td>
-                            <td><?= e($user['cin']) ?></td>
-                        </tr>
-                        <tr>
-                            <td class="text-light">Telephone:</td>
-                            <td><?= e($user['tel']) ?></td>
-                        </tr>
-                        <tr>
-                            <td class="text-light">Gender:</td>
-                            <td><?= e($user['gender']) ?></td>
-                        </tr>
-                    </table>
-
-                    <div class="section-title mb-2">Badges</div>
-                    <div class="d-flex gap-3">
-                        <span class="badge badge-info">New Member</span>
-                        <span class="badge badge-info">Verified</span>
+                        <div style="margin-top:1.25rem">
+                            <a href="setup_2fa.php" class="btn btn-primary" style="width:100%;display:block;text-align:center">Manage 2FA</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </main>
 
-
-        <!-- Contributions (Demo) -->
-        <div>
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Contributions</div>
-                </div>
-
-                <div class="card-body">
-                    <div class="alert alert-info mb-3">
-                        <strong>Your last login</strong>
-                        <p class="mb-0 text-light">Welcome back to Peace!</p>
-                    </div>
-
-                    <div class="alert alert-info">
-                        <strong>Profile Active</strong>
-                        <p class="mb-0 text-light">Your account is verified and active.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-
-<footer class="footer">
-    <div class="container">
-        <p>&copy; 2025 Peace. All Rights Reserved.</p>
-    </div>
-</footer>
-
-<script>
-function togglePasswordForm() {
-    const form = document.getElementById('passwordChangeForm');
-    if (form.classList.contains('d-none')) {
-        form.classList.remove('d-none');
-        // Hide avatar form if open
-        document.getElementById('avatarUploadForm').classList.add('d-none');
-        // Scroll to form
-        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else {
-        form.classList.add('d-none');
-    }
-}
-
-function toggleAvatarForm() {
-    const form = document.getElementById('avatarUploadForm');
-    if (form.classList.contains('d-none')) {
-        form.classList.remove('d-none');
-        // Hide password form if open
-        document.getElementById('passwordChangeForm').classList.add('d-none');
-        // Scroll to form
-        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else {
-        form.classList.add('d-none');
-    }
-}
-
-// Show form if there's an error or success message
-<?php if (!empty($passwordError) || !empty($passwordSuccess)): ?>
-    document.addEventListener('DOMContentLoaded', function() {
-        togglePasswordForm();
-    });
-<?php endif; ?>
-
-<?php if (!empty($avatarError) || !empty($avatarSuccess)): ?>
-    document.addEventListener('DOMContentLoaded', function() {
-        toggleAvatarForm();
-    });
-<?php endif; ?>
-
-// Avatar preview and validation
-document.addEventListener('DOMContentLoaded', function() {
-    const avatarInput = document.getElementById('avatar');
-    const avatarPreview = document.getElementById('avatarPreview');
-    const avatarPreviewImg = document.getElementById('avatarPreviewImg');
-    const avatarForm = document.getElementById('avatarUploadFormElement');
-    
-    if (avatarInput) {
-        // Remove any invalid styling on load
-        avatarInput.classList.remove('is-invalid');
-        
-        avatarInput.addEventListener('change', function(e) {
-            // Remove invalid class
-            this.classList.remove('is-invalid');
-            
-            const file = e.target.files[0];
-            if (file) {
-                // Validate file type
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                const maxSize = 5 * 1024 * 1024; // 5MB
-                
-                if (!allowedTypes.includes(file.type)) {
-                    this.classList.add('is-invalid');
-                    alert('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
-                    this.value = '';
-                    avatarPreview.classList.add('d-none');
-                    return;
-                }
-                
-                if (file.size > maxSize) {
-                    this.classList.add('is-invalid');
-                    alert('File is too large. Maximum size is 5MB.');
-                    this.value = '';
-                    avatarPreview.classList.add('d-none');
-                    return;
-                }
-                
-                // Show preview
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    avatarPreviewImg.src = e.target.result;
-                    avatarPreview.classList.remove('d-none');
-                };
-                reader.readAsDataURL(file);
-            } else {
-                avatarPreview.classList.add('d-none');
-            }
+    <?php include '../partials/chatbot_widget.php'; ?>
+    <script src="<?= $assets ?>theme.js"></script>
+    <script src="../assets/validation.js"></script>
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
         });
+
+        // Profile form validation
+        Validator.init('profileForm', {
+            'name': [
+                { type: 'required', message: 'First name is required' },
+                { type: 'minLength', min: 2, message: 'First name must be at least 2 characters' }
+            ]
+        });
+
+        // Password strength checker
+        const passwordInput = document.getElementById('new_password');
+        const strengthDiv = document.getElementById('password-strength');
         
-        // Form validation
-        if (avatarForm) {
-            avatarForm.addEventListener('submit', function(e) {
-                if (!avatarInput.files || avatarInput.files.length === 0) {
-                    e.preventDefault();
-                    avatarInput.classList.add('is-invalid');
-                    alert('Please select an image file to upload.');
-                    return false;
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                const hasLength = password.length >= 8;
+                const hasUpper = /[A-Z]/.test(password);
+                const hasLower = /[a-z]/.test(password);
+                const hasNumber = /[0-9]/.test(password);
+                
+                if (hasLength && hasUpper && hasLower && hasNumber) {
+                    strengthDiv.textContent = 'Password meets all requirements';
+                    strengthDiv.className = 'password-requirements valid';
+                } else {
+                    let missing = [];
+                    if (!hasLength) missing.push('8+ chars');
+                    if (!hasUpper) missing.push('uppercase');
+                    if (!hasLower) missing.push('lowercase');
+                    if (!hasNumber) missing.push('number');
+                    strengthDiv.textContent = 'Missing: ' + missing.join(', ');
+                    strengthDiv.className = 'password-requirements invalid';
                 }
             });
         }
-    }
-});
-</script>
 
+        // Password form validation
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let isValid = true;
+
+            const current = document.querySelector('[name="current_password"]');
+            const newPass = document.querySelector('[name="new_password"]');
+            const confirm = document.querySelector('[name="confirm_password"]');
+
+            if (current.value.trim() === '') {
+                Validator.showError(current, 'Current password is required');
+                isValid = false;
+            } else {
+                Validator.showSuccess(current);
+            }
+
+            const hasLength = newPass.value.length >= 8;
+            const hasUpper = /[A-Z]/.test(newPass.value);
+            const hasLower = /[a-z]/.test(newPass.value);
+            const hasNumber = /[0-9]/.test(newPass.value);
+
+            if (!(hasLength && hasUpper && hasLower && hasNumber)) {
+                Validator.showError(newPass, 'Password does not meet requirements');
+                isValid = false;
+            } else {
+                Validator.showSuccess(newPass);
+            }
+
+            if (confirm.value !== newPass.value) {
+                Validator.showError(confirm, 'Passwords do not match');
+                isValid = false;
+            } else if (confirm.value !== '') {
+                Validator.showSuccess(confirm);
+            }
+
+            if (isValid) this.submit();
+        });
+    </script>
 </body>
 </html>
+
